@@ -13,6 +13,7 @@
     "seed": "node --experimental-strip-types --no-warnings scripts/seed.ts",
     "seed:dry": "node --experimental-strip-types --no-warnings scripts/seed.ts --dry-run",
     "seed:brew-york": "node --experimental-strip-types --no-warnings scripts/seed-brew-york-report.ts",
+    "set-password": "node --experimental-strip-types --no-warnings scripts/set-password.ts",
     "scope": "node --experimental-strip-types --no-warnings scripts/agent/prospects.ts",
     "fingerprint": "node --experimental-strip-types --no-warnings scripts/agent/fingerprint.ts"
   },

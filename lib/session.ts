@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "./supabase/server";
-import { isAllowedEmail } from "./auth";
+import { isOperator } from "./auth";
 
 /**
  * The server-side gate. Every protected page and every Server Action calls
@@ -16,7 +16,7 @@ export async function requireOperator(): Promise<User> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isAllowedEmail(user.email)) {
+  if (!user || !isOperator(user)) {
     redirect("/login?error=not_allowed");
   }
   return user;

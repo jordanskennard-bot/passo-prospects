@@ -11,7 +11,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { isAllowedEmail } from "./lib/auth";
+import { isOperator } from "./lib/auth";
 
 /** Paths reachable without a session. Everything else needs one. */
 const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/signout", "/robots.txt"];
@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const allowed = Boolean(user) && isAllowedEmail(user?.email);
+  const allowed = isOperator(user);
 
   // A signed-in session belonging to someone who is not the operator is signed
   // out here rather than left to linger. The database would refuse them every

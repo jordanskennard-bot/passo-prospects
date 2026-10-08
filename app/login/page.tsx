@@ -26,8 +26,8 @@ export default async function LoginPage({
       </div>
 
       <p>
-        This site is private. Sign in with your Passo address and we will email you a
-        link.
+        This site is private. Sign in with your Passo address and password, or have a
+        sign-in link emailed to you.
       </p>
 
       {message ? (

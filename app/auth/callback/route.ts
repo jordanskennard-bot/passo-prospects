@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isAllowedEmail } from "@/lib/auth";
+import { isOperator } from "@/lib/auth";
 
 /**
  * Magic-link landing. This is where a non-allow-listed email is actually
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   if (error || !data.user) return fail("link_invalid");
 
-  if (!isAllowedEmail(data.user.email)) {
+  if (!isOperator(data.user)) {
     // Valid link, wrong person. Tear the session down before redirecting.
     await supabase.auth.signOut();
     return fail("not_allowed");

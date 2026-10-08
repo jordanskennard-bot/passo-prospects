@@ -13,3 +13,13 @@ export function isAllowedEmail(email: string | null | undefined): boolean {
   const normalised = email.trim().toLowerCase();
   return ALLOWED_EMAILS.some((allowed) => allowed.toLowerCase() === normalised);
 }
+
+/**
+ * The gate every server-side check applies to a signed-in user, however they
+ * signed in. A magic link and a password both end in a Supabase user, and only
+ * that user's email decides access: proving a password for some other account
+ * proves nothing here.
+ */
+export function isOperator(user: { email?: string | null } | null | undefined): boolean {
+  return Boolean(user) && isAllowedEmail(user?.email);
+}
