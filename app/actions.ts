@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireOperator } from "@/lib/session";
 import {
-  PROSPECT_STATUSES,
   createProspect,
   supabaseProspectWriter,
   type AddProspectInput,
@@ -143,4 +142,3 @@ export async function addProspect(
   }
 }
 
-export { PROSPECT_STATUSES };
