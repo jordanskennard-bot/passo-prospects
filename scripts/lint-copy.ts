@@ -47,7 +47,8 @@ const RULES: Rule[] = [
   },
   {
     name: "brand search",
-    pattern: /\bbrand search\b/gi,
+    // "non-brand search" is the phrase we want, so it must not trip this.
+    pattern: /(?<!\bnon[- ])\bbrand search\b/gi,
     why: "Brand search is never recommended. Say non-brand search.",
   },
 ];

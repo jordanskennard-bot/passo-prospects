@@ -155,6 +155,17 @@ async function writeReport(needle: string, payloadPath: string): Promise<void> {
   const prospect = await findBySlugOrBrand(needle);
   if (!prospect) die(`No prospect matches "${needle}".`);
 
+  // The gate again, before the payload is even read. Only a prospect this run
+  // has claimed can be filed against, and claim() only accepts an approved one,
+  // so a report can never land on a prospect the operator did not approve.
+  const status = prospect.status as string;
+  if (status !== "researching") {
+    die(
+      `${prospect.brand} is "${status}", not researching. Nothing was written.\n` +
+        `Only a claimed prospect can be filed: approve it in the tracker, then claim it.`,
+    );
+  }
+
   let raw: unknown;
   try {
     raw = JSON.parse(readFileSync(payloadPath, "utf8"));
@@ -202,7 +213,8 @@ async function writeReport(needle: string, payloadPath: string): Promise<void> {
   const { error: statusError } = await db()
     .from("prospects")
     .update({ status: "built", built_at: new Date().toISOString() })
-    .eq("id", prospect.id as string);
+    .eq("id", prospect.id as string)
+    .eq("status", "researching");
   if (statusError) die(statusError.message);
 
   const gaps =
