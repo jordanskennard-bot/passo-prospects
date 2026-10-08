@@ -11,6 +11,7 @@ import {
   type TrackerQuery,
 } from "@/lib/prospects";
 import { RowActions } from "./RowActions";
+import { AddProspectForm } from "./AddProspectForm";
 
 export const metadata = { title: "Prospect tracker · Passo" };
 
@@ -75,6 +76,8 @@ export default async function TrackerPage({
         the queue for <code>/scope-prospects</code>; the agent reads this table and will
         not touch anything else.
       </p>
+
+      <AddProspectForm />
 
       {/* ─── Filters ──────────────────────────────────────────────────── */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--s-5)", margin: "var(--s-6) 0 var(--s-4)" }}>

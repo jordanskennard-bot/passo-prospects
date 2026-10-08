@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireOperator } from "@/lib/session";
-import { PROSPECT_STATUSES, type ProspectStatus } from "@/lib/prospects";
+import {
+  PROSPECT_STATUSES,
+  createProspect,
+  supabaseProspectWriter,
+  type AddProspectInput,
+  type ProspectStatus,
+} from "@/lib/prospects";
 
 export type ActionName = "approve" | "unapprove" | "archive" | "rerun";
 
@@ -92,6 +98,49 @@ export async function saveProspectNotes(
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
+}
+
+/**
+ * Add a prospect by hand, for anything that is not in the spreadsheet.
+ *
+ * Writes through the operator's own session, so RLS applies exactly as it does
+ * to every other write from the app. The service role client is deliberately
+ * not used here: nothing about adding a row needs to bypass the policies, and
+ * reaching for it would put a key that ignores RLS on a path reachable from a
+ * browser form.
+ */
+export async function addProspect(
+  input: AddProspectInput,
+): Promise<ActionResult & { slug?: string }> {
+  await requireOperator();
+
+  const supabase = await createSupabaseServerClient();
+
+  try {
+    const result = await createProspect(supabaseProspectWriter(supabase), input);
+    if (!result.ok) return { ok: false, error: result.error };
+
+    revalidatePath("/");
+    return { ok: true, slug: result.slug };
+  } catch (error) {
+    // A unique-violation here means another tab inserted the same slug between
+    // our check and our insert. The database is the one that settles it.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/duplicate key|unique constraint/i.test(message)) {
+      return {
+        ok: false,
+        error: "That prospect was added a moment ago, in another tab or window. Nothing was added twice.",
+      };
+    }
+    if (/prospects_source_tab_check|violates check constraint/i.test(message)) {
+      return {
+        ok: false,
+        error:
+          "The database does not yet allow manually added prospects. Apply migration 002_manual_prospects.sql, then try again.",
+      };
+    }
+    return { ok: false, error: message };
+  }
 }
 
 export { PROSPECT_STATUSES };

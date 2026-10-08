@@ -41,7 +41,13 @@ node --experimental-strip-types scripts/agent/prospects.ts sheet-findings <slug>
 
 The 21 September 2026 pass established the platform, the martech, the paid media
 status and a provable problem for every prospect on the `prospects` tab. Read it
-before fetching anything. Your job is to confirm, date and deepen it, not to
+before fetching anything.
+
+A prospect whose `source_tab` is `manual` was added by hand in the tracker and
+has no spreadsheet findings: expect nulls for the scores, the shortlist fields,
+the martech and the provable problem. That is the normal shape of a manual row,
+not a failure and not a gap to record. Research it from scratch, and take the
+`notes` field as the reason it is on the list. Your job is to confirm, date and deepen it, not to
 re-derive it from scratch, and certainly not to contradict it silently. If what
 you find now disagrees with the sheet, say so explicitly in the report and keep
 both readings with their dates.

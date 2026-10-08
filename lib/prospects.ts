@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "./supabase/server";
+import type { ProspectWriter, ProspectStub } from "./add-prospect";
 
 export const PROSPECT_STATUSES = [
   "new",
@@ -13,6 +14,10 @@ export const SOURCE_TABS = [
   "prospects",
   "checked_not_shopify",
   "blocked_by_bot_protection",
+  // Added by hand in the tracker rather than imported. The seed only ever
+  // writes the three spreadsheet values, so a manual row is never touched by a
+  // re-seed. Permitted by migration 002.
+  "manual",
 ] as const;
 export type SourceTab = (typeof SOURCE_TABS)[number];
 
@@ -20,6 +25,7 @@ export const SOURCE_TAB_LABELS: Record<SourceTab, string> = {
   prospects: "Prospects",
   checked_not_shopify: "Checked not Shopify",
   blocked_by_bot_protection: "Blocked by bot protection",
+  manual: "Added manually",
 };
 
 export type Prospect = {
@@ -163,4 +169,42 @@ export async function listReports(prospectId: string): Promise<ReportRow[]> {
     .order("version", { ascending: false });
   if (error) throw new Error(`Could not load reports: ${error.message}`);
   return (data ?? []) as ReportRow[];
+}
+
+
+// ─── Adding a prospect by hand ──────────────────────────────────────────────
+// The logic lives in ./add-prospect, which has no Next.js imports so it can be
+// tested directly. Re-exported here so callers have one place to look.
+
+export {
+  createProspect,
+  type AddProspectInput,
+  type NewProspectRow,
+  type ProspectStub,
+  type ProspectWriter,
+  type CreateProspectResult,
+} from "./add-prospect";
+
+/** The real writer, over the operator's session so RLS still applies. */
+export function supabaseProspectWriter(
+  client: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+): ProspectWriter {
+  const lookup = async (column: "slug" | "domain", value: string) => {
+    const { data, error } = await client
+      .from("prospects")
+      .select("slug, brand, domain")
+      .eq(column, value)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as ProspectStub | null) ?? null;
+  };
+
+  return {
+    findBySlug: (slug) => lookup("slug", slug),
+    findByDomain: (domain) => lookup("domain", domain),
+    async insert(row) {
+      const { error } = await client.from("prospects").insert(row);
+      if (error) throw new Error(error.message);
+    },
+  };
 }

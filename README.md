@@ -66,6 +66,25 @@ Re-running updates spreadsheet fields and never touches `status`, `approved_at`,
 `built_at` or `notes`, so re-seeding after an approval cannot un-approve anything.
 The script asserts this and fails loudly if the count of non-new rows ever drops.
 
+### Adding a prospect
+
+Most prospects come from the spreadsheet. For anything else, use **Add prospect**
+on the tracker. It takes a brand (required) plus an optional domain, town,
+category, platform and notes, and nothing else: scores belong to the
+spreadsheet's model, so a manual row carries none and sorts last.
+
+The row is saved with `source_tab = 'manual'`, which the **Added manually**
+filter shows. The seed only ever writes the three spreadsheet tabs, so a manual
+row survives every future re-seed untouched.
+
+A domain is reduced to its bare host before saving, so pasting
+`https://www.example.co.uk/shop` stores `example.co.uk`. If the slug or the
+domain already belongs to another prospect, the add is refused and names that
+row rather than overwriting it.
+
+This needs migration `002_manual_prospects.sql`, which widens the `source_tab`
+check constraint. Without it the insert is rejected and the form says so.
+
 ### The agent
 
 ```bash

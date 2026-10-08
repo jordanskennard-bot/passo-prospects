@@ -6,6 +6,11 @@
 
 import { readFileSync } from "node:fs";
 import * as XLSX from "xlsx";
+// Shared with the tracker's add-prospect form, so a hand-added row gets the
+// same slug the seed would have given it.
+import { slugify } from "../lib/slug.ts";
+
+export { slugify };
 
 export type SourceTab =
   | "prospects"
@@ -92,14 +97,7 @@ function yesNo(value: unknown): boolean | null {
   return null;
 }
 
-export function slugify(brand: string): string {
-  return brand
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+
 
 type RawRow = Record<string, unknown>;
 
