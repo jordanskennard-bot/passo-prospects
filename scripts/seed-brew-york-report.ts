@@ -9,6 +9,9 @@
 // the registration is left open.
 //
 //   node --experimental-strip-types scripts/seed-brew-york-report.ts [--dry-run]
+//
+// Brew York must be approved in the tracker. Like the agent, this claims it,
+// files a new version, and sets it built; anything else is refused unwritten.
 
 import {
   parseReportPayload,
@@ -377,6 +380,30 @@ async function main(): Promise<void> {
     throw new Error(`No prospect with slug "${parsed.slug}". Run the seed script first.`);
   }
 
+  // The same gate as the agent: only an approved prospect can have a report
+  // filed against it. Claimed atomically, conditional on the status we read,
+  // so a concurrent run or a change in the tracker cannot slip past.
+  if (prospect.status !== "approved") {
+    throw new Error(
+      `${prospect.brand} is "${prospect.status}", not approved. Nothing was written.\n` +
+        `Approve it in the tracker first (Re-run, if it is already built), then run this again.`,
+    );
+  }
+  const { data: claimed, error: claimError } = await supabase
+    .from("prospects")
+    .update({ status: "researching" })
+    .eq("id", prospect.id)
+    .eq("status", "approved")
+    .select("id");
+  if (claimError) throw new Error(claimError.message);
+  if (!claimed || claimed.length === 0) {
+    throw new Error(`${prospect.brand} changed status a moment ago. Nothing was written.`);
+  }
+
+  // Hand the claim back if the insert fails, so the row is not left stuck.
+  const release = () =>
+    supabase.from("prospects").update({ status: "approved" }).eq("id", prospect.id).eq("status", "researching");
+
   const { data: latest } = await supabase
     .from("prospect_reports")
     .select("version")
@@ -393,12 +420,16 @@ async function main(): Promise<void> {
     payload: parsed,
     sources: parsed.sources,
   });
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) {
+    await release();
+    throw new Error(`${insertError.message}. Claim released, status back to approved.`);
+  }
 
   const { error: statusError } = await supabase
     .from("prospects")
     .update({ status: "built", built_at: new Date().toISOString() })
-    .eq("id", prospect.id);
+    .eq("id", prospect.id)
+    .eq("status", "researching");
   if (statusError) throw new Error(statusError.message);
 
   console.log(`Wrote ${prospect.brand} report version ${version}, status set to built.`);
