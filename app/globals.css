@@ -1,0 +1,174 @@
+/* Passo prospect scoping — paper, ink, rosa. Tokens lifted verbatim from
+ * passo/design-system/colors_and_type.css so the two surfaces stay in step.
+ * No shadows, no icon sets, no gradients, no blue. */
+
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 400;
+  font-display: swap; src: url("/fonts/Fraunces-400.ttf") format("truetype"); }
+@font-face { font-family: "Fraunces"; font-style: normal; font-weight: 500;
+  font-display: swap; src: url("/fonts/Fraunces-500.ttf") format("truetype"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400;
+  font-display: swap; src: url("/fonts/Inter-400.ttf") format("truetype"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500;
+  font-display: swap; src: url("/fonts/Inter-500.ttf") format("truetype"); }
+
+:root {
+  --paper: #F2EFE7; --paper-2: #ECE8DD; --paper-3: #E4DFD2; --paper-rule: #D8D2C2;
+  --ink: #1A1A18; --ink-2: #3A3A36; --ink-3: #6B6B63; --ink-4: #9A9A8E;
+  --rosa: #E5326A; --forest: #3D6B4A;
+
+  --serif: "Fraunces", "Times New Roman", Times, Georgia, serif;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  --tracking-caps: 0.16em; --tracking-display: -0.02em;
+  --r-1: 2px; --r-2: 4px; --r-pill: 999px;
+  --rule-hair: 1px solid var(--paper-rule);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-base: 280ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--sans); font-size: 16px; line-height: 1.55;
+  font-feature-settings: 'tnum' 1;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1, h2, h3 {
+  font-family: var(--serif); font-weight: 400;
+  letter-spacing: var(--tracking-display); line-height: 1.15;
+  margin: 0;
+}
+h1 { font-size: 40px; } h2 { font-size: 24px; } h3 { font-size: 20px; }
+p { margin: 0 0 var(--s-4); color: var(--ink-2); }
+em { font-style: italic; }
+a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--rosa); }
+
+/* Tracked-caps label. The system's workhorse for datelines and column heads. */
+.label {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: var(--tracking-caps); color: var(--ink-4);
+}
+
+.page { max-width: 1180px; margin: 0 auto; padding: var(--s-6) var(--s-4) var(--s-8); }
+.reading { max-width: 720px; }
+
+.masthead {
+  display: flex; flex-wrap: wrap; gap: var(--s-3);
+  align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid var(--ink); padding-bottom: var(--s-3);
+  margin-bottom: var(--s-6);
+}
+
+.rule { border: 0; border-top: var(--rule-hair); margin: var(--s-6) 0; }
+
+/* ─── Controls ─────────────────────────────────────────────────────────── */
+.btn {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-2);
+  border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  cursor: pointer; transition: background var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
+}
+.btn:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-quiet { border-color: var(--paper-rule); color: var(--ink-3); }
+.btn-quiet:hover:not(:disabled) { background: var(--paper-3); color: var(--ink); border-color: var(--ink-4); }
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary:hover:not(:disabled) { background: var(--rosa); border-color: var(--rosa); }
+
+input, select {
+  font-family: var(--sans); font-size: 14px; color: var(--ink);
+  background: var(--paper-2); border: var(--rule-hair);
+  border-radius: var(--r-1); padding: var(--s-2) var(--s-3);
+}
+input:focus-visible, select:focus-visible, .btn:focus-visible, a:focus-visible {
+  outline: 2px solid var(--rosa); outline-offset: 2px;
+}
+
+/* ─── Status pill ──────────────────────────────────────────────────────── */
+.pill {
+  display: inline-block; font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: var(--tracking-caps);
+  padding: 2px var(--s-2); border-radius: var(--r-pill);
+  border: 1px solid var(--paper-rule); color: var(--ink-3); white-space: nowrap;
+}
+.pill-approved   { border-color: var(--rosa); color: var(--rosa); }
+.pill-researching{ border-color: var(--ink-4); color: var(--ink-2); }
+.pill-built      { border-color: var(--forest); color: var(--forest); }
+.pill-archived   { border-color: var(--paper-rule); color: var(--ink-4); }
+
+/* ─── Tracker table ────────────────────────────────────────────────────── */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.tracker { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.tracker th, table.tracker td {
+  text-align: left; padding: var(--s-3) var(--s-3);
+  border-bottom: var(--rule-hair); vertical-align: top;
+}
+table.tracker thead th {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: var(--tracking-caps); color: var(--ink-4);
+  border-bottom: 1px solid var(--ink); white-space: nowrap;
+}
+table.tracker thead th a { text-decoration: none; color: inherit; }
+table.tracker thead th a:hover { color: var(--rosa); }
+table.tracker tbody tr:nth-child(even) { background: var(--paper-2); }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ─── Prospect page ────────────────────────────────────────────────────── */
+.section { margin: var(--s-8) 0 0; }
+.section > .label { display: block; margin-bottom: var(--s-2); }
+.panel {
+  background: var(--paper-3); border: var(--rule-hair);
+  padding: var(--s-5); margin: var(--s-4) 0;
+}
+.panel-sunken { background: var(--paper-2); }
+.caveat {
+  border-left: 2px solid var(--rosa); padding: var(--s-2) 0 var(--s-2) var(--s-4);
+  margin: var(--s-4) 0; color: var(--ink-2); font-size: 14px;
+}
+.caveat em { color: var(--ink); }
+.check { border-bottom: var(--rule-hair); padding: var(--s-3) 0; }
+.check:last-child { border-bottom: 0; }
+.check-head { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: baseline; }
+.evidence {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px; color: var(--ink-2); background: var(--paper-2);
+  padding: 2px var(--s-2); border-radius: var(--r-1);
+  word-break: break-word;
+}
+.figure-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-5); margin: var(--s-4) 0;
+}
+.figure .value {
+  font-family: var(--serif); font-size: 32px; line-height: 1.1;
+  letter-spacing: var(--tracking-display); display: block;
+}
+.figure .value.negative { color: var(--rosa); }
+.email-draft {
+  background: var(--paper-2); border: var(--rule-hair); padding: var(--s-5);
+  font-size: 15px; white-space: pre-wrap; line-height: 1.7;
+}
+.gap {
+  border-left: 2px solid var(--ink-4); padding-left: var(--s-4);
+  margin: var(--s-3) 0; font-size: 14px; color: var(--ink-3);
+}
+ol.sources { padding-left: var(--s-5); font-size: 14px; }
+ol.sources li { margin-bottom: var(--s-3); color: var(--ink-2); }
+
+@media (max-width: 640px) {
+  h1 { font-size: 30px; } h2 { font-size: 21px; }
+  .page { padding: var(--s-5) var(--s-4) var(--s-7); }
+  .figure .value { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation: none !important; }
+}
