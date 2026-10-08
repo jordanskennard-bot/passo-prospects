@@ -221,7 +221,9 @@ async function writeReport(needle: string, payloadPath: string): Promise<void> {
 const [command, ...rest] = process.argv.slice(2);
 const brandFlag = rest.indexOf("--brand");
 const brand = brandFlag >= 0 ? (rest[brandFlag + 1] ?? null) : null;
-const positional = rest.filter((a, i) => !a.startsWith("--") && i !== brandFlag + 1);
+const positional = rest.filter(
+  (a, i) => !a.startsWith("--") && (brandFlag < 0 || i !== brandFlag + 1),
+);
 
 try {
   switch (command) {
