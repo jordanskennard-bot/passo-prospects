@@ -87,6 +87,8 @@ test("the headless run is scoped to one prospect and the skill's own tools", () 
     "mcp__claude_ai_Meta__ads_library_search",
   ]);
   assert.match(at("--append-system-prompt"), /exactly one prospect: brew-york/);
+  // A compound command ("...; echo $?") is refused as a whole, so the run must be told not to.
+  assert.match(at("--append-system-prompt"), /no ;, &&, \|\|, pipes, redirects, subshells or echo/);
 });
 
 test("a slug that could smuggle anything into the prompt is refused", () => {

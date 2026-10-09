@@ -43,6 +43,10 @@ export function buildClaudeArgs(input: { slug: string; domain: string | null }):
     `You are running unattended, started by the research queue, for exactly one prospect: ${input.slug}.`,
     "Research only that prospect. Never list, claim, research or write a report for any other prospect.",
     `Save the report payload to ${PAYLOAD_DIR}/${input.slug}.json instead of /tmp, and pass that path to lint-copy and write-report.`,
+    // Only the bare commands are allowed. A compound such as "...; echo $?" is
+    // refused as a whole, which the skill would read as a failed gate.
+    "Run every shell command on its own, exactly as the skill writes it: no ;, &&, ||, pipes, redirects, subshells or echo. The Bash tool already reports the exit code.",
+    "If a command is refused, it is because of its form, not the prospect: run it again on its own, exactly as written, before concluding anything.",
     "No one can answer questions during this run. If the gate refuses, stop. If you cannot finish, release the prospect with a reason and stop.",
   ].join(" ");
 
