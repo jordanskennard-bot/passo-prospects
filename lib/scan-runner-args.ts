@@ -29,6 +29,8 @@ export function buildClaudeArgs(input: { slug: string; domain: string | null }):
   const allowed = [
     "Bash(node --experimental-strip-types scripts/agent/prospects.ts *)",
     "Bash(node --experimental-strip-types scripts/agent/fingerprint.ts *)",
+    // Companies House through the API: the key stays inside the script.
+    "Bash(node --experimental-strip-types scripts/agent/companies-house.ts *)",
     "Bash(node --experimental-strip-types scripts/lint-copy.ts *)",
     // No Read rule: reads stay confined to the repository, the default here.
     // Edit rules govern every file-writing tool, Write included.

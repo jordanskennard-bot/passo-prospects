@@ -75,6 +75,7 @@ test("the headless run is scoped to one prospect and the skill's own tools", () 
   assert.deepEqual(args.slice(start, end), [
     "Bash(node --experimental-strip-types scripts/agent/prospects.ts *)",
     "Bash(node --experimental-strip-types scripts/agent/fingerprint.ts *)",
+    "Bash(node --experimental-strip-types scripts/agent/companies-house.ts *)",
     "Bash(node --experimental-strip-types scripts/lint-copy.ts *)",
     "Edit(.scan-queue/**)",
     "WebFetch(domain:brewyork.co.uk)",

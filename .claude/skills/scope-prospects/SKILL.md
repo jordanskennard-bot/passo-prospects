@@ -105,10 +105,26 @@ was spend once, not that there is spend now.
 
 ### 5. Companies House
 
-With `COMPANIES_HOUSE_API_KEY` set, use the API
-(`https://api.company-information.service.gov.uk/search/companies?q=<brand>`,
-HTTP basic, the key as the username and an empty password). Without it, use the
-public site at `https://find-and-update.company-information.service.gov.uk`.
+Use the script, which calls the API with `COMPANIES_HOUSE_API_KEY` from
+`.env.local`. Never handle the key yourself, and never call the API any other
+way.
+
+```bash
+node --experimental-strip-types scripts/agent/companies-house.ts search "<brand>"
+node --experimental-strip-types scripts/agent/companies-house.ts profile <number>
+node --experimental-strip-types scripts/agent/companies-house.ts officers <number>
+node --experimental-strip-types scripts/agent/companies-house.ts psc <number>
+node --experimental-strip-types scripts/agent/companies-house.ts accounts <number>
+```
+
+Each prints JSON with a `source_url` to cite. `accounts` reads the balance sheet
+from the tagged iXBRL filing; a null figure means the filing does not carry it,
+and a PDF-only filing gives no figures and a `gap` to record. Never read figures
+off a scan. Check the search results for sister companies at the same address
+and say which one trades.
+
+If the script says the key is not set, use the public site at
+`https://find-and-update.company-information.service.gov.uk` instead.
 
 Take the registered name, number, incorporation date, status, officers, the
 latest accounts date, and whatever of net assets, net current liabilities,
