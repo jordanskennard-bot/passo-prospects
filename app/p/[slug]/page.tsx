@@ -8,7 +8,6 @@ import {
   listEmails,
   listNotes,
   listReports,
-  runnerLastSeen,
   STATUS_LABELS,
   trackerHrefFromParam,
   type EmailRow,
@@ -18,7 +17,7 @@ import { reportPayloadSchema } from "@/lib/report-schema";
 import { ReportView } from "../ReportView";
 import { NotesSection } from "../NotesSection";
 import { ResearchControls } from "../ResearchControls";
-import { isRunnerOnline, researchButtonLabel } from "@/lib/scan-requests";
+import { researchButtonLabel } from "@/lib/scan-requests";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -51,11 +50,10 @@ export default async function ProspectPage({
   // prospect keeps its page only if a report was ever written for it.
   if (!hasProspectPage(prospect.status, reports.length > 0)) notFound();
 
-  const [emails, notes, scanRequest, lastSeen] = await Promise.all([
+  const [emails, notes, scanRequest] = await Promise.all([
     listEmails(prospect.id),
     listNotes(prospect.id),
     latestScanRequest(prospect.id),
-    runnerLastSeen(),
   ]);
   const emailAnchors = Object.fromEntries((emails ?? []).map((e) => [e.message_id, `email-${e.id}`]));
   const requested = v ? reports.find((r) => String(r.version) === v) : undefined;
@@ -98,7 +96,6 @@ export default async function ProspectPage({
               slug={prospect.slug}
               status={prospect.status}
               request={scanRequest}
-              runnerOnline={isRunnerOnline(lastSeen)}
               versionHrefSuffix={fromParam}
             />
           </div>

@@ -14,14 +14,12 @@ export type ScanRequestRow = {
   finished_at: string | null;
   error: string | null;
   report_version: number | null;
+  /** The GitHub Actions run that took this request (migration 006). Null for the Mac runner. */
+  run_url?: string | null;
 };
 
-/** The runner's row in runner_heartbeat. */
+/** The Mac runner's row in runner_heartbeat (written each pass; the page no longer shows it). */
 export const RUNNER_ID = "jordan-mac";
-export const RUNNER_ONLINE_MINUTES = 10;
-export const RUNNER_OFFLINE_MESSAGE =
-  "Runner offline: research will start when Jordan's Mac is awake.";
-
 /** Most requests one runner pass will take on. */
 export const MAX_CLAIMS_PER_RUN = 3;
 export const RUN_TIMEOUT_MS = 20 * 60 * 1000;
@@ -29,6 +27,28 @@ export const RUN_TIMEOUT_MS = 20 * 60 * 1000;
 export const ACTIVE_REFRESH_MS = 15 * 1000;
 
 export const NO_LONGER_APPROVED = "No longer approved";
+
+// ─── GitHub Actions ─────────────────────────────────────────────────────────
+export const GITHUB_REPO = "jordanskennard-bot/passo-prospects";
+export const GITHUB_WORKFLOW = "scope-prospect.yml";
+export const GITHUB_REF = "main";
+/** Where to look before a run has claimed the request and recorded its own URL. */
+export const GITHUB_WORKFLOW_RUNS_URL = `https://github.com/${GITHUB_REPO}/actions/workflows/${GITHUB_WORKFLOW}`;
+
+/** scan_requests ids are UUIDs. Anything else is refused before it reaches a query. */
+export function isRequestId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+/**
+ * Null if Claude Code can authenticate: a subscription token from
+ * `claude setup-token` (CLAUDE_CODE_OAUTH_TOKEN) or an API key. Otherwise the
+ * reason, recorded on the request.
+ */
+export function claudeCredentialProblem(env: Record<string, string | undefined>): string | null {
+  if (env.CLAUDE_CODE_OAUTH_TOKEN?.trim() || env.ANTHROPIC_API_KEY?.trim()) return null;
+  return "No Claude credentials: add CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY to the repository's Actions secrets.";
+}
 
 /**
  * The button the page offers, if any. Only an approved prospect can be
@@ -43,13 +63,6 @@ export function researchButtonLabel(status: string): "Run research" | "Re-run re
 
 export function isActive(request: Pick<ScanRequestRow, "state"> | null | undefined): boolean {
   return request?.state === "queued" || request?.state === "running";
-}
-
-export function isRunnerOnline(lastSeenAt: string | null | undefined, now: Date = new Date()): boolean {
-  if (!lastSeenAt) return false;
-  const seen = new Date(lastSeenAt).getTime();
-  if (Number.isNaN(seen)) return false;
-  return now.getTime() - seen <= RUNNER_ONLINE_MINUTES * 60 * 1000;
 }
 
 /**

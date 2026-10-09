@@ -1,0 +1,65 @@
+# Research one prospect: the "Run research" button on its page dispatches this
+# with the scan_requests id it just queued.
+#
+# The approval gate is unchanged. scripts/run-scan-request.ts claims the
+# request only if it is still queued, then fails it "No longer approved"
+# unless the prospect is 'approved' at that moment, before anything runs.
+# /scope-prospects then checks again itself.
+#
+# Claude Code runs headless through the CLI (not claude-code-action), with the
+# restricted tool list from lib/scan-runner-args.ts.
+#
+# Secrets (Settings, Secrets and variables, Actions): NEXT_PUBLIC_SUPABASE_URL,
+# SUPABASE_SERVICE_ROLE_KEY, COMPANIES_HOUSE_API_KEY, and one of
+# CLAUDE_CODE_OAUTH_TOKEN (Claude subscription, from `claude setup-token`) or
+# ANTHROPIC_API_KEY. They reach the script as environment variables only and
+# are never echoed.
+
+name: Scope prospect
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: "scan_requests id to process"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scope-prospect-${{ inputs.request_id }}
+  cancel-in-progress: false
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Claude Code
+        run: npm install --global --ignore-scripts @anthropic-ai/claude-code@2.1.282
+
+      - name: Claim, gate, research and finish
+        env:
+          # The input is passed as data, never interpolated into the script.
+          REQUEST_ID: ${{ inputs.request_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node --experimental-strip-types --no-warnings scripts/run-scan-request.ts "$REQUEST_ID"

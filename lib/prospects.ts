@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "./supabase/server";
 import type { ProspectWriter, ProspectStub } from "./add-prospect";
 import type { NoteRow } from "./notes";
-import { RUNNER_ID, type ScanRequestRow } from "./scan-requests";
+import type { ScanRequestRow } from "./scan-requests";
 
 export const PROSPECT_STATUSES = [
   "new",
@@ -286,7 +286,8 @@ export async function latestScanRequest(prospectId: string): Promise<ScanRequest
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("scan_requests")
-    .select("id, prospect_id, state, requested_at, started_at, finished_at, error, report_version")
+    // "*" rather than a column list, so the page still loads before migration 006 adds run_url.
+    .select("*")
     .eq("prospect_id", prospectId)
     .order("requested_at", { ascending: false })
     .limit(1)
@@ -294,19 +295,6 @@ export async function latestScanRequest(prospectId: string): Promise<ScanRequest
   if (isMissingTable(error)) return undefined;
   if (error) throw new Error(`Could not load research requests: ${error.message}`);
   return (data as ScanRequestRow | null) ?? null;
-}
-
-/** When the Mac runner last checked in, or null if never (or no table yet). */
-export async function runnerLastSeen(): Promise<string | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("runner_heartbeat")
-    .select("last_seen_at")
-    .eq("id", RUNNER_ID)
-    .maybeSingle();
-  if (isMissingTable(error)) return null;
-  if (error) throw new Error(`Could not load the runner heartbeat: ${error.message}`);
-  return (data?.last_seen_at as string | undefined) ?? null;
 }
 
 /** Every version, newest first. The page renders [0] and lists the rest. */

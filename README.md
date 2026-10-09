@@ -136,25 +136,29 @@ Remove it with `launchctl bootout gui/$(id -u)/com.passo.scan-email`.
 
 An approved prospect's page has a **Run research** button (**Re-run research**
 when built, which moves it back to approved first, like the tracker's Rerun).
-It queues a row in `scan_requests` (migration 005). A runner on the Mac,
-`npm run scan-queue`, picks it up:
+It queues a row in `scan_requests` (migration 005) and dispatches
+`.github/workflows/scope-prospect.yml` with that row's id, using
+`GITHUB_DISPATCH_TOKEN` in Vercel.
 
-- writes `runner_heartbeat`, which the page shows as "Runner online";
-- claims up to three queued requests, oldest first, one at a time;
-- fails a request "No longer approved" unless the prospect is `approved` at
-  that moment, and runs nothing;
-- runs `claude -p "/scope-prospects <slug>"` with the tools that skill needs
-  and nothing more (`lib/scan-runner-args.ts`), 20 minute limit, output logged
-  to `~/Library/Logs/passo-scan-queue.log`;
-- marks it done with the new report version, or failed with the last lines of
-  output.
+The workflow runs `scripts/run-scan-request.ts`, which claims that one request
+(recording the run's URL, migration 006), fails it "No longer approved" unless
+the prospect is `approved` at that moment, then runs
+`claude -p "/scope-prospects <slug>"` with the restricted tool list in
+`lib/scan-runner-args.ts`, and marks it done with the new report version or
+failed with the last lines of output. The claim, gate, run and finish live in
+`lib/scan-queue-runner.ts`, shared with the Mac runner.
 
-To run it every five minutes:
+Actions secrets: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`COMPANIES_HOUSE_API_KEY`, and either `CLAUDE_CODE_OAUTH_TOKEN` (a Claude
+subscription token from `claude setup-token`) or `ANTHROPIC_API_KEY`.
+
+**Mac fallback.** If dispatch fails, the request stays queued, and
+`npm run scan-queue` on the Mac picks it up with the same code. To run it
+every five minutes:
 
 ```bash
 cp scripts/launchd/com.passo.scan-queue.plist ~/Library/LaunchAgents/
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.passo.scan-queue.plist
-launchctl kickstart -p gui/$(id -u)/com.passo.scan-queue   # optional: run once now
 tail -f ~/Library/Logs/passo-scan-queue.log
 ```
 

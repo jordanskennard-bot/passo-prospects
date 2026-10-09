@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { queueResearch } from "../actions";
 import {
   ACTIVE_REFRESH_MS,
+  GITHUB_WORKFLOW_RUNS_URL,
   isActive,
-  RUNNER_OFFLINE_MESSAGE,
   researchButtonLabel,
   type ScanRequestRow,
 } from "@/lib/scan-requests";
@@ -18,8 +18,8 @@ const time = (iso: string) =>
   });
 
 /**
- * The "Run research" button, the state of the latest request, and whether the
- * runner on the Mac is awake. Refreshes itself every 15 seconds while a
+ * The "Run research" button, the state of the latest request, and a link to
+ * the GitHub Actions run doing it. Refreshes itself every 15 seconds while a
  * request is queued or running.
  */
 export function ResearchControls({
@@ -27,19 +27,18 @@ export function ResearchControls({
   slug,
   status,
   request,
-  runnerOnline,
   versionHrefSuffix,
 }: {
   prospectId: string;
   slug: string;
   status: string;
   request: ScanRequestRow | null;
-  runnerOnline: boolean;
   /** Carries the tracker filters onto the report link. */
   versionHrefSuffix: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const router = useRouter();
   const active = isActive(request);
   const label = researchButtonLabel(status);
@@ -52,9 +51,11 @@ export function ResearchControls({
 
   function run() {
     setError(null);
+    setNotice(null);
     startTransition(async () => {
       const result = await queueResearch(prospectId);
       if (!result.ok) setError(result.error);
+      else if (result.notice) setNotice(result.notice);
       router.refresh();
     });
   }
@@ -69,9 +70,8 @@ export function ResearchControls({
         ) : null}
         {request ? <RequestState request={request} slug={slug} versionHrefSuffix={versionHrefSuffix} /> : null}
       </div>
-      <span className="label" style={{ color: runnerOnline ? "var(--forest)" : "var(--ink-3)" }}>
-        {runnerOnline ? "Runner online" : RUNNER_OFFLINE_MESSAGE}
-      </span>
+      {request ? <RunLink request={request} /> : null}
+      {notice ? <span className="label">{notice}</span> : null}
       {error ? (
         <p role="alert" style={{ color: "var(--rosa)", margin: 0 }}>
           {error}
@@ -127,4 +127,23 @@ function RequestState({
         </span>
       );
   }
+}
+
+/** Where to watch the run: its own Actions page once claimed, else the workflow's list. */
+function RunLink({ request }: { request: ScanRequestRow }) {
+  if (request.run_url) {
+    return (
+      <a className="label" href={request.run_url} target="_blank" rel="noopener noreferrer">
+        View the run on GitHub Actions
+      </a>
+    );
+  }
+  if (request.state === "queued") {
+    return (
+      <a className="label" href={GITHUB_WORKFLOW_RUNS_URL} target="_blank" rel="noopener noreferrer">
+        Waiting for GitHub Actions to start
+      </a>
+    );
+  }
+  return null;
 }

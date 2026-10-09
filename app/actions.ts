@@ -11,6 +11,7 @@ import {
 } from "@/lib/prospects";
 import { checkManualNote } from "@/lib/notes";
 import { researchButtonLabel } from "@/lib/scan-requests";
+import { dispatchScopeWorkflow } from "@/lib/github-dispatch";
 
 export type ActionName = "approve" | "unapprove" | "archive" | "rerun";
 
@@ -34,7 +35,7 @@ const TRANSITIONS: Record<
   rerun:     { from: ["built"],                      to: "approved", stamp: "approved_at" },
 };
 
-export type ActionResult = { ok: true } | { ok: false; error: string };
+export type ActionResult = { ok: true; notice?: string } | { ok: false; error: string };
 
 export async function runProspectAction(
   action: ActionName,
@@ -249,9 +250,11 @@ export async function queueResearch(prospectId: string): Promise<ActionResult> {
     }
   }
 
-  const { error: queueError } = await supabase
+  const { data: queued, error: queueError } = await supabase
     .from("scan_requests")
-    .insert({ prospect_id: prospectId, state: "queued" });
+    .insert({ prospect_id: prospectId, state: "queued" })
+    .select("id")
+    .single();
   if (queueError) {
     if (/scan_requests_one_active_idx|duplicate key/i.test(queueError.message)) {
       return { ok: false, error: `Research for ${current.brand} is already queued or running.` };
@@ -259,7 +262,14 @@ export async function queueResearch(prospectId: string): Promise<ActionResult> {
     return { ok: false, error: queueError.message };
   }
 
+  // Start the GitHub Actions run. If that fails the request stays queued, and
+  // the Mac runner picks it up next time it runs.
+  const dispatch = await dispatchScopeWorkflow(queued.id, process.env.GITHUB_DISPATCH_TOKEN);
+  if (!dispatch.ok) console.error(`Research queued but not dispatched to GitHub: ${dispatch.reason}`);
+
   revalidatePath("/");
   revalidatePath("/p/[slug]", "page");
-  return { ok: true };
+  return dispatch.ok
+    ? { ok: true }
+    : { ok: true, notice: "Queued, but GitHub Actions could not be started. The Mac runner will pick it up." };
 }
