@@ -10,6 +10,7 @@ import {
   type ProspectStatus,
 } from "@/lib/prospects";
 import { checkManualNote } from "@/lib/notes";
+import { researchButtonLabel } from "@/lib/scan-requests";
 
 export type ActionName = "approve" | "unapprove" | "archive" | "rerun";
 
@@ -207,6 +208,58 @@ export async function deleteNote(noteId: string): Promise<ActionResult> {
     .select("id");
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: "That note could not be found." };
+  revalidatePath("/p/[slug]", "page");
+  return { ok: true };
+}
+
+// ─── Run research ───────────────────────────────────────────────────────────
+// Queues /scope-prospects for one prospect. The status is re-read here, never
+// taken from the page, so a stale page cannot queue anything that is not
+// approved. A built prospect is moved back to approved first, exactly as the
+// tracker's Rerun does. The runner on the Mac checks again when it claims the
+// request, and the skill checks again before it touches anything.
+
+export async function queueResearch(prospectId: string): Promise<ActionResult> {
+  await requireOperator();
+  const supabase = await createSupabaseServerClient();
+
+  const { data: current, error: readError } = await supabase
+    .from("prospects")
+    .select("id, brand, status")
+    .eq("id", prospectId)
+    .maybeSingle();
+  if (readError) return { ok: false, error: readError.message };
+  if (!current) return { ok: false, error: "That prospect could not be found." };
+
+  const status = current.status as string;
+  if (!researchButtonLabel(status)) {
+    return { ok: false, error: `${current.brand} is ${status}. Only an approved or built prospect can be researched.` };
+  }
+
+  if (status === "built") {
+    const { data: moved, error: moveError } = await supabase
+      .from("prospects")
+      .update({ status: "approved", approved_at: new Date().toISOString() })
+      .eq("id", prospectId)
+      .eq("status", "built")
+      .select("id");
+    if (moveError) return { ok: false, error: moveError.message };
+    if (!moved || moved.length === 0) {
+      return { ok: false, error: `${current.brand} changed status a moment ago. Reload and try again.` };
+    }
+  }
+
+  const { error: queueError } = await supabase
+    .from("scan_requests")
+    .insert({ prospect_id: prospectId, state: "queued" });
+  if (queueError) {
+    if (/scan_requests_one_active_idx|duplicate key/i.test(queueError.message)) {
+      return { ok: false, error: `Research for ${current.brand} is already queued or running.` };
+    }
+    return { ok: false, error: queueError.message };
+  }
+
+  revalidatePath("/");
   revalidatePath("/p/[slug]", "page");
   return { ok: true };
 }

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --no-warnings --test lib/auth.test.ts lib/add-prospect.test.ts lib/outreach.test.ts lib/reply-notes.test.ts scripts/agent/fingerprint.test.ts",
+    "test": "node --experimental-strip-types --no-warnings --test lib/auth.test.ts lib/add-prospect.test.ts lib/outreach.test.ts lib/reply-notes.test.ts lib/scan-requests.test.ts scripts/agent/fingerprint.test.ts",
     "lint:copy": "node --experimental-strip-types --no-warnings scripts/lint-copy.ts",
     "check": "npm run typecheck && npm run lint:copy && npm test",
     "seed": "node --experimental-strip-types --no-warnings scripts/seed.ts",
@@ -15,6 +15,7 @@
     "seed:brew-york": "node --experimental-strip-types --no-warnings scripts/seed-brew-york-report.ts",
     "set-password": "node --experimental-strip-types --no-warnings scripts/set-password.ts",
     "scan-email": "node --experimental-strip-types --no-warnings scripts/scan-email.ts",
+    "scan-queue": "node --experimental-strip-types --no-warnings scripts/run-scan-queue.ts",
     "scope": "node --experimental-strip-types --no-warnings scripts/agent/prospects.ts",
     "fingerprint": "node --experimental-strip-types --no-warnings scripts/agent/fingerprint.ts"
   },

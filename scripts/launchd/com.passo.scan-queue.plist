@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs `npm run scan-queue` every five minutes while the Mac is awake: writes
+  the runner heartbeat, then works through any "Run research" requests. The
+  script keeps its own log at ~/Library/Logs/passo-scan-queue.log; launchd's
+  own stdout and stderr go to a separate file so lines are not doubled.
+  Install as a per-user agent; the commands are in README.md under
+  "Run research from the prospect page".
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.passo.scan-queue</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/npm</string>
+    <string>run</string>
+    <string>scan-queue</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/jordan/passo-prospects</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- launchd starts with a bare PATH: npm needs node, the runner needs claude. -->
+    <key>PATH</key>
+    <string>/Users/jordan/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>StartInterval</key>
+  <integer>300</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/jordan/Library/Logs/passo-scan-queue.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/jordan/Library/Logs/passo-scan-queue.launchd.log</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>

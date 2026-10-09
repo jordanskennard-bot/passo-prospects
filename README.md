@@ -132,6 +132,34 @@ tail -f ~/Library/Logs/passo-scan-email.log
 
 Remove it with `launchctl bootout gui/$(id -u)/com.passo.scan-email`.
 
+### Run research from the prospect page
+
+An approved prospect's page has a **Run research** button (**Re-run research**
+when built, which moves it back to approved first, like the tracker's Rerun).
+It queues a row in `scan_requests` (migration 005). A runner on the Mac,
+`npm run scan-queue`, picks it up:
+
+- writes `runner_heartbeat`, which the page shows as "Runner online";
+- claims up to three queued requests, oldest first, one at a time;
+- fails a request "No longer approved" unless the prospect is `approved` at
+  that moment, and runs nothing;
+- runs `claude -p "/scope-prospects <slug>"` with the tools that skill needs
+  and nothing more (`lib/scan-runner-args.ts`), 20 minute limit, output logged
+  to `~/Library/Logs/passo-scan-queue.log`;
+- marks it done with the new report version, or failed with the last lines of
+  output.
+
+To run it every five minutes:
+
+```bash
+cp scripts/launchd/com.passo.scan-queue.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.passo.scan-queue.plist
+launchctl kickstart -p gui/$(id -u)/com.passo.scan-queue   # optional: run once now
+tail -f ~/Library/Logs/passo-scan-queue.log
+```
+
+Remove it with `launchctl bootout gui/$(id -u)/com.passo.scan-queue`.
+
 ## Deploying to Vercel
 
 The app is a standard Next.js project with no build configuration, so Vercel

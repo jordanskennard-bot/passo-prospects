@@ -4,9 +4,11 @@ import { requireOperator } from "@/lib/session";
 import {
   getProspectBySlug,
   hasProspectPage,
+  latestScanRequest,
   listEmails,
   listNotes,
   listReports,
+  runnerLastSeen,
   STATUS_LABELS,
   trackerHrefFromParam,
   type EmailRow,
@@ -15,6 +17,8 @@ import {
 import { reportPayloadSchema } from "@/lib/report-schema";
 import { ReportView } from "../ReportView";
 import { NotesSection } from "../NotesSection";
+import { ResearchControls } from "../ResearchControls";
+import { isRunnerOnline, researchButtonLabel } from "@/lib/scan-requests";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -47,7 +51,12 @@ export default async function ProspectPage({
   // prospect keeps its page only if a report was ever written for it.
   if (!hasProspectPage(prospect.status, reports.length > 0)) notFound();
 
-  const [emails, notes] = await Promise.all([listEmails(prospect.id), listNotes(prospect.id)]);
+  const [emails, notes, scanRequest, lastSeen] = await Promise.all([
+    listEmails(prospect.id),
+    listNotes(prospect.id),
+    latestScanRequest(prospect.id),
+    runnerLastSeen(),
+  ]);
   const emailAnchors = Object.fromEntries((emails ?? []).map((e) => [e.message_id, `email-${e.id}`]));
   const requested = v ? reports.find((r) => String(r.version) === v) : undefined;
   const report = requested ?? reports[0];
@@ -74,6 +83,26 @@ export default async function ProspectPage({
       {/* ─── 3. Research ───────────────────────────────────────────────── */}
       <section className="section" id="research">
         <span className="label">Research</span>
+        {scanRequest === undefined ? (
+          researchButtonLabel(prospect.status) ? (
+            <div className="panel panel-sunken" style={{ marginBottom: "var(--s-4)" }}>
+              <p style={{ margin: 0 }}>
+                Run research will appear here once migration <code>005_scan_requests.sql</code> is applied.
+              </p>
+            </div>
+          ) : null
+        ) : researchButtonLabel(prospect.status) || scanRequest ? (
+          <div style={{ marginBottom: "var(--s-4)" }}>
+            <ResearchControls
+              prospectId={prospect.id}
+              slug={prospect.slug}
+              status={prospect.status}
+              request={scanRequest}
+              runnerOnline={isRunnerOnline(lastSeen)}
+              versionHrefSuffix={fromParam}
+            />
+          </div>
+        ) : null}
         {report ? (
           <ReportRendered report={report} />
         ) : (

@@ -6,3 +6,6 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Report payloads written by unattended research runs
+.scan-queue/
