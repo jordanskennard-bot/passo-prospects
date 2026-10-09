@@ -9,6 +9,7 @@ import {
   type AddProspectInput,
   type ProspectStatus,
 } from "@/lib/prospects";
+import { checkManualNote } from "@/lib/notes";
 
 export type ActionName = "approve" | "unapprove" | "archive" | "rerun";
 
@@ -26,7 +27,7 @@ const TRANSITIONS: Record<
 > = {
   approve:   { from: ["new", "archived"],            to: "approved", stamp: "approved_at" },
   unapprove: { from: ["approved"],                   to: "new",      stamp: null },
-  archive:   { from: ["new", "approved", "built"],   to: "archived" },
+  archive:   { from: ["new", "approved", "built", "message_sent", "response_received"], to: "archived" },
   // A built prospect goes back in the queue. built_at is left alone: it records
   // that a report exists, and the previous versions are all still there.
   rerun:     { from: ["built"],                      to: "approved", stamp: "approved_at" },
@@ -142,3 +143,70 @@ export async function addProspect(
   }
 }
 
+
+// ─── Prospect notes ─────────────────────────────────────────────────────────
+// Constants and validation live in lib/notes.ts: a "use server" file may only
+// export async functions. Every write goes through the operator's session, so
+// RLS applies. Email notes can be edited and deleted here like any other; only
+// the scanner is restricted to inserting.
+
+export async function addNote(
+  prospectId: string,
+  category: string,
+  body: string,
+): Promise<ActionResult> {
+  await requireOperator();
+  const checked = checkManualNote(category, body);
+  if (!checked.ok) return checked;
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("prospect_notes").insert({
+    prospect_id: prospectId,
+    category: checked.category,
+    body: checked.body,
+    source: "manual",
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/p/[slug]", "page");
+  return { ok: true };
+}
+
+export async function updateNote(
+  noteId: string,
+  category: string,
+  body: string,
+): Promise<ActionResult> {
+  await requireOperator();
+  const checked = checkManualNote(category, body);
+  if (!checked.ok) return checked;
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("prospect_notes")
+    .update({ category: checked.category, body: checked.body })
+    .eq("id", noteId)
+    .select("id");
+  if (error) {
+    if (/prospect_notes_message_body_key|duplicate key/i.test(error.message)) {
+      return { ok: false, error: "That email already has a note with exactly this text." };
+    }
+    return { ok: false, error: error.message };
+  }
+  if (!data || data.length === 0) return { ok: false, error: "That note could not be found." };
+  revalidatePath("/p/[slug]", "page");
+  return { ok: true };
+}
+
+export async function deleteNote(noteId: string): Promise<ActionResult> {
+  await requireOperator();
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("prospect_notes")
+    .delete()
+    .eq("id", noteId)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "That note could not be found." };
+  revalidatePath("/p/[slug]", "page");
+  return { ok: true };
+}

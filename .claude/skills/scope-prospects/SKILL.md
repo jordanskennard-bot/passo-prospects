@@ -31,6 +31,10 @@ rank first. If it returns `[]`, say so and stop.
 
 Work one prospect at a time, start to finish, before moving to the next.
 
+**Never write to `prospect_notes`, `prospect_emails` or a prospect's status
+outside the commands below.** Notes are mine and the email scan's. The only
+writes this skill makes are `claim`, `release` and `write-report`.
+
 ## Per prospect
 
 ### 1. Read what is already known

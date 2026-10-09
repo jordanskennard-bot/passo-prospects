@@ -10,6 +10,10 @@ function availableActions(status: ProspectStatus): ActionName[] {
     case "new":         return ["approve", "archive"];
     case "approved":    return ["unapprove", "archive"];
     case "built":       return ["rerun", "archive"];
+    // Outreach statuses are set by the email scanner, forward only. The
+    // tracker can still archive a prospect that has gone nowhere.
+    case "message_sent":
+    case "response_received": return ["archive"];
     case "archived":    return ["approve"];
     case "researching": return [];
   }

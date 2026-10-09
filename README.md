@@ -94,6 +94,44 @@ npm run scope list-approved -- --brand "Brew York"   # the gate
 
 The gate exits non-zero for anything not approved, which is what stops the skill.
 
+### Daily email scan
+
+`npm run scan-email` reads Sent and Inbox on Zoho EU for the last 14 days and
+records matches in `prospect_emails` (migration 003). An email to an address at
+a prospect's domain moves `new` or `built` to `message_sent`. A reply to one of
+those, matched by In-Reply-To or References, moves `message_sent` to
+`response_received`. Mail that only comes from a prospect's domain never counts.
+`archived` is never touched; `approved` and `researching` are recorded but held.
+
+Each reply, once stored, is also turned into notes (migration 004). The new
+text of the reply, with quotes and signatures stripped, goes to Claude
+(`claude-haiku-5-5`) with the prospect's brand and category. The reply is
+treated as untrusted data; whatever comes back is validated in
+`lib/reply-notes.ts` and can only become `source: 'email'` note rows for that
+one prospect. Existing notes are never edited or deleted by the scan.
+
+The IMAP password and the Anthropic key live in the login keychain, never in a
+file:
+
+```bash
+security add-generic-password -s passo-zoho-imap -a jordan@passoagency.com -w
+security add-generic-password -s passo-anthropic -a scan-email -w
+npm run scan-email -- --dry-run                     # what would happen, nothing written
+npm run scan-email -- --dry-run --backfill-notes    # also proposed notes for stored replies with none
+npm run scan-email
+```
+
+To run it at 08:00 daily, install the launchd agent:
+
+```bash
+cp scripts/launchd/com.passo.scan-email.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.passo.scan-email.plist
+launchctl kickstart -p gui/$(id -u)/com.passo.scan-email   # optional: run once now
+tail -f ~/Library/Logs/passo-scan-email.log
+```
+
+Remove it with `launchctl bootout gui/$(id -u)/com.passo.scan-email`.
+
 ## Deploying to Vercel
 
 The app is a standard Next.js project with no build configuration, so Vercel

@@ -5,7 +5,12 @@ import {
   countsByStatus,
   parseTrackerQuery,
   PROSPECT_STATUSES,
+  STATUS_LABELS,
   SOURCE_TABS,
+  hasProspectPage,
+  prospectIdsWithReports,
+  trackerHref,
+  trackerSearch,
   SOURCE_TAB_LABELS,
   type SortKey,
   type TrackerQuery,
@@ -31,19 +36,7 @@ const COLUMNS: { key: SortKey | null; label: string; align?: "right" }[] = [
 ];
 
 /** Build a tracker URL preserving the filters already applied. */
-function href(query: TrackerQuery, patch: Partial<Record<string, string>>): string {
-  const params = new URLSearchParams();
-  params.set("sort", query.sort);
-  params.set("dir", query.direction);
-  if (query.status !== "all") params.set("status", query.status);
-  if (query.sourceTab !== "all") params.set("tab", query.sourceTab);
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined || value === "all") params.delete(key);
-    else params.set(key, value);
-  }
-  const text = params.toString();
-  return text ? `/?${text}` : "/";
-}
+const href = trackerHref;
 
 export default async function TrackerPage({
   searchParams,
@@ -59,7 +52,13 @@ export default async function TrackerPage({
   }
   const query = parseTrackerQuery(flat);
 
-  const [prospects, counts] = await Promise.all([listProspects(query), countsByStatus()]);
+  const [prospects, counts, withReports] = await Promise.all([
+    listProspects(query),
+    countsByStatus(),
+    prospectIdsWithReports(),
+  ]);
+  // Carried to each prospect page so "Back to tracker" returns to this view.
+  const from = encodeURIComponent(trackerSearch(query));
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
   return (
@@ -71,11 +70,7 @@ export default async function TrackerPage({
         </form>
       </div>
 
-      <p className="reading">
-        Nothing is researched until it is approved here. Approving a prospect puts it in
-        the queue for <code>/scope-prospects</code>; the agent reads this table and will
-        not touch anything else.
-      </p>
+      <p className="reading">Prospects awaiting outreach and in conversation</p>
 
       <AddProspectForm />
 
@@ -95,7 +90,7 @@ export default async function TrackerPage({
                 href={href(query, { status })}
                 active={query.status === status}
               >
-                {status} {counts[status] ?? 0}
+                {STATUS_LABELS[status]} {counts[status] ?? 0}
               </FilterLink>
             ))}
           </div>
@@ -158,7 +153,11 @@ export default async function TrackerPage({
                 <tr key={p.id}>
                   <td>
                     <strong style={{ fontWeight: 500 }}>
-                      {p.status === "built" ? <Link href={`/p/${p.slug}`}>{p.brand}</Link> : p.brand}
+                      {hasProspectPage(p.status, withReports.has(p.id)) ? (
+                        <Link href={`/p/${p.slug}?from=${from}`}>{p.brand}</Link>
+                      ) : (
+                        p.brand
+                      )}
                     </strong>
                     {p.shortlist_rank ? (
                       <span className="label" style={{ marginLeft: "var(--s-2)", color: "var(--rosa)" }}>
@@ -189,7 +188,7 @@ export default async function TrackerPage({
                     )}
                   </td>
                   <td>
-                    <span className={`pill pill-${p.status}`}>{p.status}</span>
+                    <span className={`pill pill-${p.status}`}>{STATUS_LABELS[p.status]}</span>
                   </td>
                   <td>
                     <RowActions prospectId={p.id} brand={p.brand} status={p.status} />

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs `npm run scan-email` at 08:00 every day. If the Mac is asleep at 08:00,
+  launchd runs it once on wake. Install as a per-user agent so it can read the
+  login keychain; the commands are in README.md under "Daily email scan".
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.passo.scan-email</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/npm</string>
+    <string>run</string>
+    <string>scan-email</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/jordan/passo-prospects</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- launchd starts with a bare PATH; npm needs to find node. -->
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/jordan/Library/Logs/passo-scan-email.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/jordan/Library/Logs/passo-scan-email.log</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>

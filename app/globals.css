@@ -102,6 +102,8 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, a:focus-visible {
 .pill-approved   { border-color: var(--rosa); color: var(--rosa); }
 .pill-researching{ border-color: var(--ink-4); color: var(--ink-2); }
 .pill-built      { border-color: var(--forest); color: var(--forest); }
+.pill-message_sent      { border-color: var(--forest); color: var(--paper); background: var(--forest); }
+.pill-response_received { border-color: var(--rosa); color: var(--paper); background: var(--rosa); }
 .pill-archived   { border-color: var(--paper-rule); color: var(--ink-4); }
 
 /* ─── Tracker table ────────────────────────────────────────────────────── */
